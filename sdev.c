@@ -13,12 +13,23 @@ static struct sdev_data sdev_data[] = {
     [1] = {.name = "sdev_B", .size = 110, .serial_name = "cgfhgvhjbkASDFGH"},
     [2] = {.name = "sdev_C", .size = 120, .serial_name = "ASDFGnbvcH"},
     [3] = {.name = "sdev_D", .size = 130, .serial_name = "AdfghSDFGH"},
+    [4] = {.name = "sdev_parent", .size = 140, .serial_name = "root"},
+};
+
+static struct sensor_device sdev_p = {
+    .name = "sdev_p",
+    .id = 3,
+    .dev = {
+        .platform_data = &sdev_data[4],
+        .release = sensor_device_release_default,
+    },
 };
 
 static struct sensor_device sdev1 = {
     .name = "sdev1",
     .id = 1,
     .dev = {
+        .parent = &sdev_p.dev,
         .platform_data = &sdev_data[0],
         .release = sensor_device_release_default,
     },
@@ -28,6 +39,7 @@ static struct sensor_device sdev2 = {
     .name = "sdev2",
     .id = 2,
     .dev = {
+        .parent = &sdev_p.dev,
         .platform_data = &sdev_data[1],
         .release = sensor_device_release_default,
     },
@@ -36,6 +48,7 @@ static struct sensor_device sdev3 = {
     .name = "sdev3",
     .id = 2,
     .dev = {
+        .parent = &sdev_p.dev,
         .platform_data = &sdev_data[2],
         .release = sensor_device_release_default,
     },
@@ -45,12 +58,14 @@ static struct sensor_device sdev4 = {
     .name = "sdev4",
     .id = 1,
     .dev = {
+        .parent = &sdev_p.dev,
         .platform_data = &sdev_data[3],
         .release = sensor_device_release_default,
     },
 };
 
 static struct sensor_device *sdevs[] = {
+    &sdev_p,
     &sdev1,
     &sdev2,
     &sdev3,
