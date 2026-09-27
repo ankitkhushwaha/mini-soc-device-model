@@ -43,30 +43,47 @@ static int sdrv_remove(struct sensor_device *dev)
     return 0;
 }
 
-static struct sensor_drv sdrv = {
-    .name = "sensor",
+static struct sensor_drv sdrv1 = {
+    .name = "sensor1",
     .id = 1,
     .probe = sdrv_probe,
     .remove = sdrv_remove,
     .driver = {
-        .name = "sensor-driver",
+        .name = "sensor-driver1",
+    },
+};
+
+static struct sensor_drv sdrv2 = {
+    .name = "sensor2",
+    .id = 2,
+    .probe = sdrv_probe,
+    .remove = sdrv_remove,
+    .driver = {
+        .name = "sensor-driver2",
     },
 };
 
 static int __init sdrv_init(void) {
     int ret;
 
-    ret = sensor_driver_register(&sdrv);
-    if (ret) {
-        pr_info("sdrv module registration failed\n");
-        return ret;
-    }
+    ret = sensor_driver_register(&sdrv1);
+    if (ret)
+        goto fail;
+    ret = sensor_driver_register(&sdrv2);
+    if (ret)
+        goto fail;
+
     pr_info("sdrv module registration pass\n");
     return 0;
+
+fail:
+    pr_info("sdrv module registration failed\n");
+    return ret;
 }
 
 static void __exit sdrv_exit(void) {
-    sensor_driver_unregister(&sdrv);
+    sensor_driver_unregister(&sdrv1);
+    sensor_driver_unregister(&sdrv2);
     pr_debug("sdrv module exited\n");
 }
 

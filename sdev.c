@@ -26,7 +26,7 @@ static struct sensor_device sdev1 = {
 
 static struct sensor_device sdev2 = {
     .name = "sdev2",
-    .id = 1,
+    .id = 2,
     .dev = {
         .platform_data = &sdev_data[1],
         .release = sensor_device_release_default,
@@ -34,7 +34,7 @@ static struct sensor_device sdev2 = {
 };
 static struct sensor_device sdev3 = {
     .name = "sdev3",
-    .id = 1,
+    .id = 2,
     .dev = {
         .platform_data = &sdev_data[2],
         .release = sensor_device_release_default,
