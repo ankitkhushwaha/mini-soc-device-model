@@ -72,7 +72,7 @@ static int sensor_device_add(struct sensor_device *sdev) {
     dev->bus = &sensor_bus_type;
 
     dev_set_name(dev, "%s", sdev->name);
-    pr_debug("Registering platform device '%s'. Parent at '%s'\n", dev_name(dev),
+    pr_debug("Registering sensor device '%s'. Parent at '%s'\n", dev_name(dev),
             dev_name(dev->parent));
 
     ret = device_add(dev);
