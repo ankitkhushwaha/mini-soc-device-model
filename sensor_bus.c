@@ -45,6 +45,40 @@ static void sensor_bus_remove(struct device *_dev){
     drv->remove(dev);
 }
 
+static int device_iter(struct device *dev, void *data)
+{
+    (*(int *)data)++;
+    return 0;
+}
+
+static ssize_t num_child_show(struct device *dev, struct device_attribute *attr, char *buf)
+{
+    int ret, count;
+
+    ret = device_for_each_child(dev, &count, device_iter);
+    if (ret) {
+        pr_err("failed to count no of child\n");
+        return ret;
+    }
+    return sprintf(buf, "%d\n", count);
+}
+
+DEVICE_ATTR_RO(num_child);
+
+static struct attribute *dev_attr[] = {
+    &dev_attr_num_child.attr,
+    NULL,
+};
+
+static const struct attribute_group dev_attr_grp = {
+    .attrs = dev_attr,
+};
+
+static const struct attribute_group *dev_attr_grps[] = {
+    &dev_attr_grp,
+    NULL,
+};
+
 static ssize_t ndev_show(const struct bus_type *bus, char *buf) {
     return sprintf(buf, "%d\n", atomic_read(&num_dev));
 }
@@ -74,6 +108,7 @@ const struct attribute_group *bus_attr_groups[] = {
 struct bus_type sensor_bus_type = {
     .name = "sensor",
     .bus_groups = bus_attr_groups,
+    .dev_groups = dev_attr_grps,
     .match = sensor_bus_match,
     .probe = sensor_bus_probe,
     .remove = sensor_bus_remove,
