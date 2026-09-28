@@ -4,8 +4,12 @@
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/device.h>
+#include <linux/atomic.h>
 
 #include "sensor_device.h"
+
+static atomic_t num_dev = ATOMIC_INIT(0);
+static atomic_t num_drv = ATOMIC_INIT(0);
 
 void sensor_device_release_default(struct device *dev) {
     pr_debug("device:%s released\n", dev_name(dev));
@@ -41,8 +45,35 @@ static void sensor_bus_remove(struct device *_dev){
     drv->remove(dev);
 }
 
+static ssize_t ndev_show(const struct bus_type *bus, char *buf) {
+    return sprintf(buf, "%d\n", atomic_read(&num_dev));
+}
+
+static ssize_t ndrv_show(const struct bus_type *bus, char *buf) {
+    return sprintf(buf, "%d\n", atomic_read(&num_drv));
+}
+
+BUS_ATTR_RO(ndev);
+BUS_ATTR_RO(ndrv);
+
+static struct attribute *bus_attr[] = {
+    &bus_attr_ndev.attr,
+    &bus_attr_ndrv.attr,
+    NULL,
+};
+
+struct attribute_group bus_attr_group = {
+    .attrs = bus_attr,
+};
+
+const struct attribute_group *bus_attr_groups[] = {
+    &bus_attr_group,
+    NULL,
+};
+
 struct bus_type sensor_bus_type = {
     .name = "sensor",
+    .bus_groups = bus_attr_groups,
     .match = sensor_bus_match,
     .probe = sensor_bus_probe,
     .remove = sensor_bus_remove,
@@ -50,15 +81,20 @@ struct bus_type sensor_bus_type = {
 EXPORT_SYMBOL_GPL(sensor_bus_type);
 
 int __must_check __sensor_driver_register(struct sensor_drv *drv, struct module *owner) {
+    int ret;
     drv->driver.owner = owner;
     drv->driver.bus = &sensor_bus_type;
 
-    return driver_register(&drv->driver);
+    ret = driver_register(&drv->driver);
+    atomic_inc(&num_drv);
+
+    return ret;
 }
 EXPORT_SYMBOL_GPL(__sensor_driver_register);
 
 void sensor_driver_unregister(struct sensor_drv *drv) {
     driver_unregister(&drv->driver);
+    atomic_dec(&num_drv);
 }
 EXPORT_SYMBOL_GPL(sensor_driver_unregister);
 
@@ -84,8 +120,13 @@ static int sensor_device_add(struct sensor_device *sdev) {
 }
 
 int __must_check sensor_device_register(struct sensor_device *sdev) {
+    int ret;
+
     device_initialize(&sdev->dev);
-    return sensor_device_add(sdev);
+    ret = sensor_device_add(sdev);
+    atomic_inc(&num_dev);
+
+    return ret;
 }
 EXPORT_SYMBOL_GPL(sensor_device_register);
 
@@ -93,6 +134,7 @@ void sensor_device_unregister(struct sensor_device *sdev) {
     if (!IS_ERR_OR_NULL(sdev)) {
         device_del(&sdev->dev);
         put_device(&sdev->dev);
+        atomic_dec(&num_dev);
     }
 }
 EXPORT_SYMBOL_GPL(sensor_device_unregister);
