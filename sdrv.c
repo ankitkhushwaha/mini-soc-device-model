@@ -44,7 +44,7 @@ static int sdrv_remove(struct sensor_device *dev)
 	return 0;
 }
 
-static struct sensor_drv sdrv1 = {
+static struct sensor_driver sdrv1 = {
     .name = "sensor1",
     .id = 1,
     .probe = sdrv_probe,
@@ -55,7 +55,7 @@ static struct sensor_drv sdrv1 = {
         },
 };
 
-static struct sensor_drv sdrv2 = {
+static struct sensor_driver sdrv2 = {
     .name = "sensor2",
     .id = 2,
     .probe = sdrv_probe,

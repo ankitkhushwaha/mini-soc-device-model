@@ -27,7 +27,7 @@ static int sensor_bus_match(struct device *_dev,
 			    const struct device_driver *_drv)
 {
 	struct sensor_device *dev = to_sensor_device(_dev);
-	struct sensor_drv *drv = to_sensor_drv(_drv);
+	struct sensor_driver *drv = to_sensor_driver(_drv);
 
 	pr_debug("dev->id:%d, drv->id:%d\n", dev->id, drv->id);
 	return (dev->id == drv->id);
@@ -36,7 +36,7 @@ static int sensor_bus_match(struct device *_dev,
 static int sensor_bus_probe(struct device *_dev)
 {
 	struct sensor_device *dev = to_sensor_device(_dev);
-	struct sensor_drv *drv = to_sensor_drv(_dev->driver);
+	struct sensor_driver *drv = to_sensor_driver(_dev->driver);
 
 	return drv->probe(dev);
 }
@@ -44,7 +44,7 @@ static int sensor_bus_probe(struct device *_dev)
 static void sensor_bus_remove(struct device *_dev)
 {
 	struct sensor_device *dev = to_sensor_device(_dev);
-	struct sensor_drv *drv = to_sensor_drv(_dev->driver);
+	struct sensor_driver *drv = to_sensor_driver(_dev->driver);
 
 	drv->remove(dev);
 }
@@ -122,7 +122,7 @@ struct bus_type sensor_bus_type = {
 };
 EXPORT_SYMBOL_GPL(sensor_bus_type);
 
-int __must_check __sensor_driver_register(struct sensor_drv *drv,
+int __must_check __sensor_driver_register(struct sensor_driver *drv,
 					  struct module *owner)
 {
 	int ret;
@@ -136,7 +136,7 @@ int __must_check __sensor_driver_register(struct sensor_drv *drv,
 }
 EXPORT_SYMBOL_GPL(__sensor_driver_register);
 
-void sensor_driver_unregister(struct sensor_drv *drv)
+void sensor_driver_unregister(struct sensor_driver *drv)
 {
 	driver_unregister(&drv->driver);
 	atomic_dec(&num_drv);

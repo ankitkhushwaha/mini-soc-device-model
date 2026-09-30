@@ -9,7 +9,7 @@ struct sensor_device {
 	struct device dev;
 };
 
-struct sensor_drv {
+struct sensor_driver {
 	int id;
 	const char *name;
 	struct device_driver driver;
@@ -19,12 +19,12 @@ struct sensor_drv {
 
 #define to_sensor_device(x) container_of((x), struct sensor_device, dev);
 
-#define to_sensor_drv(drv) container_of((drv), struct sensor_drv, driver);
+#define to_sensor_driver(drv) container_of((drv), struct sensor_driver, driver);
 
 #define sensor_driver_register(drv) __sensor_driver_register(drv, THIS_MODULE)
 
-extern int __sensor_driver_register(struct sensor_drv *, struct module *);
-extern void sensor_driver_unregister(struct sensor_drv *);
+extern int __sensor_driver_register(struct sensor_driver *, struct module *);
+extern void sensor_driver_unregister(struct sensor_driver *);
 
 extern int sensor_device_register(struct sensor_device *sdev);
 extern void sensor_device_unregister(struct sensor_device *sdev);
