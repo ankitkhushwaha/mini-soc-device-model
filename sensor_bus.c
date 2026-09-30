@@ -192,15 +192,20 @@ static int __init sensor_bus_init(void)
 	int ret;
 
 	ret = device_register(&sensor_bus);
-	if (ret) {
-		put_device(&sensor_bus);
-		return ret;
-	}
+	if (ret)
+		goto dev_fail;
 
 	ret = bus_register(&sensor_bus_type);
 	if (ret)
-		device_unregister(&sensor_bus);
+		goto dev_unreg;
 
+	return 0;
+
+dev_unreg:
+	device_unregister(&sensor_bus);
+dev_fail:
+	put_device(&sensor_bus);
+	pr_err("bus failed to register\n");
 	return ret;
 }
 

@@ -72,15 +72,17 @@ static int __init sdrv_init(void)
 
 	ret = sensor_driver_register(&sdrv1);
 	if (ret)
-		goto fail;
+		goto fail_1;
 	ret = sensor_driver_register(&sdrv2);
 	if (ret)
-		goto fail;
+		goto fail_2;
 
 	pr_info("sdrv module registration pass\n");
 	return 0;
 
-fail:
+fail_2:
+	sensor_driver_unregister(&sdrv1);
+fail_1:
 	pr_info("sdrv module registration failed\n");
 	return ret;
 }

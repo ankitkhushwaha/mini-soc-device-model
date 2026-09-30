@@ -83,16 +83,16 @@ static int __init sdev_init(void)
 
 	for (i = 0; i < size; i++) {
 		ret = sensor_device_register(sdevs[i]);
-		if (ret) {
-			pr_debug("sensor device registratiion failed\n");
+		if (ret)
 			goto fail;
-		}
 	}
 	pr_info("sdev module registration pass\n");
 	return 0;
 fail:
 	while (--i >= 0)
 		sensor_device_unregister(sdevs[i]);
+
+	pr_debug("sensor device registratiion failed\n");
 	return ret;
 }
 
@@ -101,7 +101,6 @@ static void __exit sdev_exit(void)
 	int i, size = ARRAY_SIZE(sdevs);
 	for (i = 0; i < size; i++)
 		sensor_device_unregister(sdevs[i]);
-
 	pr_debug("sdev module exited\n");
 }
 
