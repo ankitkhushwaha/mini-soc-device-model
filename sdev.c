@@ -89,10 +89,10 @@ static int __init sdev_init(void)
 	pr_info("sdev module registration pass\n");
 	return 0;
 fail:
+	pr_err("sensor device:%i:%s registratiion failed\n", i, sdevs[i]->name);
+
 	while (--i >= 0)
 		sensor_device_unregister(sdevs[i]);
-
-	pr_debug("sensor device registratiion failed\n");
 	return ret;
 }
 
