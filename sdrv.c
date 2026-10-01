@@ -19,7 +19,6 @@ static int sdrv_probe(struct sensor_device *_dev)
 {
 	struct device *dev = &_dev->dev;
 	struct sdev_data *tmp, *data;
-	dev_t devt;
 	int ret;
 
 	pr_info("A device is detected\n");
@@ -78,7 +77,6 @@ fail:
 
 static int sdrv_remove(struct sensor_device *_dev)
 {
-	int ret;
 	struct device *dev = &_dev->dev;
 	struct sdev_data *data = dev_get_drvdata(dev);
 

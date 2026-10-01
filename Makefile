@@ -4,7 +4,7 @@ obj-m += sdriver.o
 
 sdriver-objs := sdrv.o sdrv_ops.o
 
-ccflags-y += -DDEBUG -Wno-unused-variable
+ccflags-y += -DDEBUG
 
 KERNELDIR ?= /home/ankit/dev/linux-src/linux-mainline/build_qemu
 HOSTDIR := /lib/modules/$(shell uname -r)/build
