@@ -8,14 +8,20 @@
 #include "sdev.h"
 #include "sensor_device.h"
 
+static struct sdev_data_priv sdev_priv_data[] = {
+	[0] = { .size = 100, .serial_name = "ASDFGH" },
+	[1] = { .size = 110, .serial_name = "cgfhgvhjbkASDFGH" },
+	[2] = { .size = 120, .serial_name = "ASDFGnbvcH" },
+	[3] = { .size = 130, .serial_name = "AdfghSDFGH" },
+	[4] = { .size = 140, .serial_name = "root" },
+};
+
 static struct sdev_data sdev_data[] = {
-	[0] = { .name = "sdev_A", .size = 100, .serial_name = "ASDFGH" },
-	[1] = { .name = "sdev_B",
-		.size = 110,
-		.serial_name = "cgfhgvhjbkASDFGH" },
-	[2] = { .name = "sdev_C", .size = 120, .serial_name = "ASDFGnbvcH" },
-	[3] = { .name = "sdev_D", .size = 130, .serial_name = "AdfghSDFGH" },
-	[4] = { .name = "sdev_parent", .size = 140, .serial_name = "root" },
+	[0] = { .sdata = &sdev_priv_data[0] },
+	[1] = { .sdata = &sdev_priv_data[1] },
+	[2] = { .sdata = &sdev_priv_data[2] },
+	[3] = { .sdata = &sdev_priv_data[3] },
+	[4] = { .sdata = &sdev_priv_data[4] },
 };
 
 static struct sensor_device sdev = {

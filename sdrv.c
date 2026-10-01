@@ -8,39 +8,64 @@
 #include "sdev.h"
 #include "sensor_device.h"
 
+#define NUM_DEV 2
+#define SENSOR "sensor"
+
+static struct sensor_prv_drv sdrv = {
+	.total_devices = 0,
+};
+
 static int sdrv_probe(struct sensor_device *_dev)
 {
-	pr_info("A device is detected\n");
-
 	struct device *dev = &_dev->dev;
 	struct sdev_data *tmp, *data;
-	tmp = (struct sdev_data *)dev_get_platdata(dev);
-	if (!tmp) {
-		pr_info("platform data is null\n");
-		return -ENODEV;
-	}
-	pr_debug("platform data: serial_num:%s, size:%d\n", tmp->serial_name,
-		 tmp->size);
+	dev_t devt;
+	int ret;
 
-	data = devm_kmalloc(dev, sizeof(struct sdev_data), GFP_KERNEL);
+	pr_info("A device is detected\n");
+
+	tmp = (struct sdev_data *)dev_get_platdata(dev);
+	if (!tmp || !tmp->sdata) {
+		pr_info("platform_dev:%s data is null\n", _dev->name);
+		ret = -ENODEV;
+		goto fail;
+	}
+
+	pr_debug("platform data: serial_num:%s, size:%d\n",
+		 tmp->sdata->serial_name, tmp->sdata->size);
+
+	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 	if (!data) {
 		pr_info("kmalloc allocation for sdev_data failed\n");
-		return -ENOMEM;
+		ret = -ENOMEM;
+		goto fail;
 	}
-	data->name = devm_kmalloc(dev, tmp->size, GFP_KERNEL);
-	if (!data->name) {
-		pr_info("kmalloc allocation for sdev_data->name failed\n");
-		return -ENOMEM;
+	data->sdata = tmp->sdata;
+
+	data->buff = devm_kzalloc(dev, tmp->sdata->size, GFP_KERNEL);
+	if (!data->buff) {
+		pr_info("kmalloc allocation for sdev_data->buff failed\n");
+		ret = -ENOMEM;
+		goto fail;
 	}
 
 	dev_set_drvdata(dev, data);
-	*data = *tmp;
 
+	sdrv.total_devices++;
 	return 0;
+fail:
+	pr_info("platform dev:%s failed to probe\n", _dev->name);
+	return ret;
 }
 
-static int sdrv_remove(struct sensor_device *dev)
+static int sdrv_remove(struct sensor_device *_dev)
 {
+	struct device *dev = &_dev->dev;
+	struct sdev_data *data = dev_get_drvdata(dev);
+
+	sdrv.total_devices--;
+	dev_set_drvdata(dev, NULL);
+	pr_info("sensor device:%s is removed\n", _dev->name);
 	return 0;
 }
 
@@ -72,17 +97,20 @@ static int __init sdrv_init(void)
 
 	ret = sensor_driver_register(&sdrv1);
 	if (ret)
-		goto fail_1;
+		goto class_del;
 	ret = sensor_driver_register(&sdrv2);
 	if (ret)
-		goto fail_2;
+		goto unreg_drv;
 
 	pr_info("sdrv module registration pass\n");
 	return 0;
 
-fail_2:
+unreg_drv:
 	sensor_driver_unregister(&sdrv1);
-fail_1:
+class_del:
+	class_destroy(sdrv.cls);
+	pr_err("driver registration failed\n");
+fail:
 	pr_info("sdrv module registration failed\n");
 	return ret;
 }
