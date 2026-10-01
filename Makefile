@@ -2,9 +2,11 @@ obj-m += sensor_bus.o
 obj-m += sdev.o
 obj-m += sdriver.o
 
-sdriver-objs := sdrv.o sdrv_ops.o
+sensor_bus-objs := core/sensor_bus.o
+sdev-objs := sensor_dev/sdev.o
+sdriver-objs := sensor_drv/sdrv.o sensor_drv/sdrv_ops.o
 
-ccflags-y += -DDEBUG
+ccflags-y += -DDEBUG -I$(src) -I$(src)/include
 
 KERNELDIR ?= /home/ankit/dev/linux-src/linux-mainline/build_qemu
 HOSTDIR := /lib/modules/$(shell uname -r)/build
