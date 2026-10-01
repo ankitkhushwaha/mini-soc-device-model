@@ -18,6 +18,7 @@ struct sdev_data {
     struct device *dev;
     dev_t devt;
 	char *buff;
+	int size;
 };
 
 struct sensor_prv_drv {
