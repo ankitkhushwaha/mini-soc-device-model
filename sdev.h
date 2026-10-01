@@ -26,4 +26,6 @@ struct sensor_prv_drv {
     dev_t dev_t;
 };
 
+extern void sensor_cdev_init(struct cdev *cdev);
+
 #endif

@@ -1,6 +1,8 @@
 obj-m += sensor_bus.o
 obj-m += sdev.o
-obj-m += sdrv.o
+obj-m += sdriver.o
+
+sdriver-objs := sdrv.o sdrv_ops.o
 
 ccflags-y += -DDEBUG -Wno-unused-variable
 

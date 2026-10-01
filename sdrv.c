@@ -51,8 +51,26 @@ static int sdrv_probe(struct sensor_device *_dev)
 
 	dev_set_drvdata(dev, data);
 
+	sensor_cdev_init(&data->cdev);
+
+	data->devt = sdrv.dev_t + sdrv.total_devices;
+	ret = cdev_add(&data->cdev, data->devt, 1);
+	if (ret) {
+		pr_err("cdev_add failed\n");
+		goto fail;
+	}
+
+	data->dev = device_create(sdrv.cls, dev, data->devt, NULL, "%s:%d",
+				  _dev->name, sdrv.total_devices);
+	if (IS_ERR(data->dev)) {
+		ret = PTR_ERR(data->dev);
+		goto cdev_del;
+	}
 	sdrv.total_devices++;
 	return 0;
+
+cdev_del:
+	cdev_del(&data->cdev);
 fail:
 	pr_info("platform dev:%s failed to probe\n", _dev->name);
 	return ret;
@@ -60,8 +78,12 @@ fail:
 
 static int sdrv_remove(struct sensor_device *_dev)
 {
+	int ret;
 	struct device *dev = &_dev->dev;
 	struct sdev_data *data = dev_get_drvdata(dev);
+
+	device_destroy(sdrv.cls, data->devt);
+	cdev_del(&data->cdev);
 
 	sdrv.total_devices--;
 	dev_set_drvdata(dev, NULL);
@@ -95,6 +117,19 @@ static int __init sdrv_init(void)
 {
 	int ret;
 
+	ret = alloc_chrdev_region(&sdrv.dev_t, 0, NUM_DEV, SENSOR);
+	if (ret) {
+		pr_err("Alloc chrdev failed\n");
+		goto fail;
+	}
+
+	sdrv.cls = class_create(SENSOR);
+	if (IS_ERR(sdrv.cls)) {
+		ret = PTR_ERR(sdrv.cls);
+		pr_err("class creation failed\n");
+		goto unreg_chrdev;
+	}
+
 	ret = sensor_driver_register(&sdrv1);
 	if (ret)
 		goto class_del;
@@ -110,6 +145,8 @@ unreg_drv:
 class_del:
 	class_destroy(sdrv.cls);
 	pr_err("driver registration failed\n");
+unreg_chrdev:
+	unregister_chrdev_region(sdrv.dev_t, NUM_DEV);
 fail:
 	pr_info("sdrv module registration failed\n");
 	return ret;
@@ -119,6 +156,8 @@ static void __exit sdrv_exit(void)
 {
 	sensor_driver_unregister(&sdrv1);
 	sensor_driver_unregister(&sdrv2);
+	class_destroy(sdrv.cls);
+	unregister_chrdev_region(sdrv.dev_t, NUM_DEV);
 	pr_debug("sdrv module exited\n");
 }
 
