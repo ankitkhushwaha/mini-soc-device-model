@@ -17,9 +17,9 @@ struct sensor_driver {
 	int (*remove)(struct sensor_device *dev);
 };
 
-#define to_sensor_device(x) container_of((x), struct sensor_device, dev);
+#define to_sensor_device(x) container_of((x), struct sensor_device, dev)
 
-#define to_sensor_driver(drv) container_of((drv), struct sensor_driver, driver);
+#define to_sensor_driver(drv) container_of((drv), struct sensor_driver, driver)
 
 #define sensor_driver_register(drv) __sensor_driver_register(drv, THIS_MODULE)
 
