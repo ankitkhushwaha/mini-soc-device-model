@@ -2,7 +2,9 @@ obj-m += sbus.o
 obj-m += sdev.o
 obj-m += sdriver.o
 
-sbus-objs := core/of_sensor.o core/sensor.o
+sbus-y := core/sensor.o
+sbus-$(CONFIG_OF) += core/of_sensor.o
+
 sdev-objs := sensor_dev/sdev.o
 sdriver-objs := sensor_drv/sdrv.o sensor_drv/sdrv_ops.o
 

@@ -1,13 +1,15 @@
 #define pr_fmt(fmt) "%s(): " fmt, __func__
 
-#include <linux/atomic.h>
-#include <linux/device.h>
 #include <linux/init.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/atomic.h>
+#include <linux/slab.h>
 #include <linux/of.h>
+#include <linux/dma-mapping.h>
 
 #include "sensor_device.h"
+#include "of_sensor.h"
 
 static atomic_t num_dev = ATOMIC_INIT(0);
 static atomic_t num_drv = ATOMIC_INIT(0);
@@ -123,6 +125,55 @@ struct bus_type sensor_bus_type = {
 };
 EXPORT_SYMBOL_GPL(sensor_bus_type);
 
+struct sensor_object {
+	struct sensor_device sdev;
+	char name[];
+};
+
+void sensor_device_put(struct sensor_device *sdev)
+{
+	if (!IS_ERR_OR_NULL(sdev))
+		put_device(&sdev->dev);
+}
+EXPORT_SYMBOL_GPL(sensor_device_put);
+
+void sensor_device_release(struct device *dev)
+{
+	pr_debug("device:%s released\n", dev_name(dev));
+
+	struct sensor_object *sa =
+		container_of(dev, struct sensor_object, sdev.dev);
+
+	of_node_put(sa->sdev.dev.of_node);
+	kfree(sa);
+}
+EXPORT_SYMBOL_GPL(sensor_device_release);
+
+// static void setup_sdev_dma_masks(struct sensor_device *sdev)
+// {
+// 	if (!sdev->dev.coherent_dma_mask)
+// 		sdev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+// 	if (!sdev->dev.dma_mask)
+// 		sdev->dev.dma_mask = &(DMA_BIT_MASK(32));
+// }
+
+struct sensor_device *sensor_device_alloc(const char *name, int id)
+{
+	struct sensor_object *sa;
+
+	sa = kzalloc(sizeof(*sa) + strlen(name) + 1, GFP_KERNEL);
+	if (sa) {
+		strcpy(sa->name, name);
+		sa->sdev.name = sa->name;
+		sa->sdev.id = id;
+		device_initialize(&sa->sdev.dev);
+		sa->sdev.dev.release = sensor_device_release;
+		// setup_sdev_dma_masks(&sa->sdev);
+	}
+	return sa ? &sa->sdev : NULL;
+}
+EXPORT_SYMBOL_GPL(sensor_device_alloc);
+
 int __must_check __sensor_driver_register(struct sensor_driver *drv,
 					  struct module *owner)
 {
@@ -200,7 +251,7 @@ static int __init sensor_bus_init(void)
 	if (ret)
 		goto dev_unreg;
 
-	return 0;
+	return of_sensor_default_populate_init();
 
 dev_unreg:
 	device_unregister(&sensor_bus);
@@ -212,6 +263,7 @@ dev_fail:
 
 static void __exit sensor_bus_exit(void)
 {
+	of_sensor_depopulate(&sensor_bus);
 	device_unregister(&sensor_bus);
 	bus_unregister(&sensor_bus_type);
 }
