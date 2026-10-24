@@ -30,7 +30,9 @@ Check the result:
 
 ```bash
 dmesg | tail
-ls /sys/bus/sensor/                     # the sensor bus appears here
+ls /sys/bus/                     # the sensor bus appears here
+ls /sys/bus/<bus-name>/devices/
+ls /sys/bus/<bus-name>/drivers/
 ```
 
 Unload in reverse order:
@@ -76,7 +78,16 @@ index 1111111..2222222 100644
  
 ---
 ```
-Build the kernel again, and now `platform device` will ignore the device tree node with this compatible name. 
+build the kernel again, and now `platform device` will ignore the device tree node with this com. 
+
+## Concepts covered
+
+- `bus_type` registration and device/driver matching
+- Allocating, naming and adding a `struct device` (`device_initialize`, `dev_set_name`, `device_add`)
+- Binding a `device_node` to a device with `device_set_node()` and the resulting `of_node` sysfs link
+- Populating devices from Device Tree, and tearing them down again
+- Driver `probe()` / `remove()` and unbinding through sysfs
+- Character device registration (`cdev`, `dev_t`, device class)
 
 ## License
 

@@ -20,6 +20,7 @@ static inline int of_sensor_device_destroy(struct device *dev, void *data)
 
 static inline void of_sensor_depopulate(struct device *parent)
 {
+    return;
 }
 #endif /* CONFIG_OF */
 
