@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __OF_SENSOR_H__
 #define __OF_SENSOR_H__
 

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0
 obj-m += sbus.o
 obj-m += sdev.o
 obj-m += sdriver.o
