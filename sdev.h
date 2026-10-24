@@ -8,8 +8,8 @@ struct device;
 struct class;
 
 struct sdev_data_priv {
-	const char *serial_name;
 	int size;
+	const char *serial_name;
 };
 
 struct sdev_data {

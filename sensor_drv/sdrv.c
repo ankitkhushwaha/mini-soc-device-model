@@ -11,28 +11,20 @@
 
 #define NUM_DEV 2
 #define SENSOR "sensor"
+#define OF_DEVICE_SIZE 256
 
 static struct sensor_prv_drv sdrv = {
 	.total_devices = 0,
 };
 
-static int sdrv_probe(struct sensor_device *_dev)
+static int sdrv_probe_default(struct sensor_device *sdev,
+			      struct sdev_data *sdata, int size)
 {
-	struct device *dev = &_dev->dev;
-	struct sdev_data *tmp, *data;
+	struct device *dev = &sdev->dev;
+	struct sdev_data *data;
 	int ret;
 
 	pr_info("A device is detected\n");
-
-	tmp = (struct sdev_data *)dev_get_platdata(dev);
-	if (!tmp || !tmp->sdata) {
-		pr_info("platform_dev:%s data is null\n", _dev->name);
-		ret = -ENODEV;
-		goto fail;
-	}
-
-	pr_debug("platform data: serial_num:%s, size:%d\n",
-		 tmp->sdata->serial_name, tmp->sdata->size);
 
 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
 	if (!data) {
@@ -40,9 +32,11 @@ static int sdrv_probe(struct sensor_device *_dev)
 		ret = -ENOMEM;
 		goto fail;
 	}
-	data->sdata = tmp->sdata;
 
-	data->buff = devm_kzalloc(dev, tmp->sdata->size, GFP_KERNEL);
+	data->sdata = sdata ? sdata->sdata : NULL;
+	data->size = size;
+
+	data->buff = devm_kzalloc(dev, data->size, GFP_KERNEL);
 	if (!data->buff) {
 		pr_info("kmalloc allocation for sdev_data->buff failed\n");
 		ret = -ENOMEM;
@@ -61,7 +55,7 @@ static int sdrv_probe(struct sensor_device *_dev)
 	}
 
 	data->dev = device_create(sdrv.cls, dev, data->devt, NULL, "%s:%d",
-				  _dev->name, sdrv.total_devices);
+				  sdev->name, sdrv.total_devices);
 	if (IS_ERR(data->dev)) {
 		ret = PTR_ERR(data->dev);
 		goto cdev_del;
@@ -72,8 +66,30 @@ static int sdrv_probe(struct sensor_device *_dev)
 cdev_del:
 	cdev_del(&data->cdev);
 fail:
-	pr_info("platform dev:%s failed to probe\n", _dev->name);
+	pr_info("platform dev:%s failed to probe\n", sdev->name);
 	return ret;
+}
+
+static int sdrv_device_probe(struct sensor_device *sdev)
+{
+	struct device *dev = &sdev->dev;
+	struct sdev_data *tmp;
+
+	tmp = (struct sdev_data *)dev_get_platdata(dev);
+	if (!tmp || !tmp->sdata) {
+		pr_info("sensor_dev:%s data is null\n", sdev->name);
+		return -ENODEV;
+	}
+
+	pr_debug("sensor data: serial_num:%s, size:%d\n",
+		 tmp->sdata->serial_name, tmp->sdata->size);
+
+	return sdrv_probe_default(sdev, tmp, tmp->sdata->size);
+}
+
+static int sdrv_of_device_probe(struct sensor_device *dev)
+{
+	return sdrv_probe_default(dev, NULL, OF_DEVICE_SIZE);
 }
 
 static int sdrv_remove(struct sensor_device *_dev)
@@ -90,10 +106,29 @@ static int sdrv_remove(struct sensor_device *_dev)
 	return 0;
 }
 
+static struct of_device_id of_match_table[] = {
+	{
+		.compatible = "sensor-bus",
+	},
+	{},
+};
+
+/* this driver is used for of match */
+static struct sensor_driver sensordrv = {
+		.name = "sensor",
+		.id = 0,
+		.probe = sdrv_of_device_probe,
+		.remove = sdrv_remove,
+		.driver = {
+		    .name = "sensor-drv",
+			.of_match_table = of_match_table,
+		},
+};
+
 static struct sensor_driver sdrv1 = {
     .name = "sensor1",
     .id = 1,
-    .probe = sdrv_probe,
+    .probe = sdrv_device_probe,
     .remove = sdrv_remove,
     .driver =
         {
@@ -104,12 +139,18 @@ static struct sensor_driver sdrv1 = {
 static struct sensor_driver sdrv2 = {
     .name = "sensor2",
     .id = 2,
-    .probe = sdrv_probe,
+    .probe = sdrv_device_probe,
     .remove = sdrv_remove,
     .driver =
         {
             .name = "sensor-driver2",
         },
+};
+
+static struct sensor_driver *drv_array[] = {
+	&sensordrv,
+	&sdrv1,
+	&sdrv2,
 };
 
 static int __init sdrv_init(void)
@@ -129,18 +170,13 @@ static int __init sdrv_init(void)
 		goto unreg_chrdev;
 	}
 
-	ret = sensor_driver_register(&sdrv1);
+	ret = sensor_register_drivers(drv_array, ARRAY_SIZE(drv_array));
 	if (ret)
 		goto class_del;
-	ret = sensor_driver_register(&sdrv2);
-	if (ret)
-		goto unreg_drv;
 
 	pr_info("sdrv module registration pass\n");
 	return 0;
 
-unreg_drv:
-	sensor_driver_unregister(&sdrv1);
 class_del:
 	class_destroy(sdrv.cls);
 	pr_err("driver registration failed\n");
@@ -153,6 +189,7 @@ fail:
 
 static void __exit sdrv_exit(void)
 {
+	sensor_driver_unregister(&sensordrv);
 	sensor_driver_unregister(&sdrv1);
 	sensor_driver_unregister(&sdrv2);
 	class_destroy(sdrv.cls);

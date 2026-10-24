@@ -6,6 +6,7 @@
 #include <linux/atomic.h>
 #include <linux/slab.h>
 #include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/dma-mapping.h>
 
 #include "sensor_device.h"
@@ -26,14 +27,18 @@ struct device sensor_bus = {
 };
 EXPORT_SYMBOL_GPL(sensor_bus);
 
-static int sensor_bus_match(struct device *_dev,
-			    const struct device_driver *_drv)
+static int sensor_bus_match(struct device *dev, const struct device_driver *drv)
 {
-	struct sensor_device *dev = to_sensor_device(_dev);
-	struct sensor_driver *drv = to_sensor_driver(_drv);
+	struct sensor_device *sdev = to_sensor_device(dev);
+	struct sensor_driver *sdrv = to_sensor_driver(drv);
 
-	pr_debug("dev->id:%d, drv->id:%d\n", dev->id, drv->id);
-	return (dev->id == drv->id);
+	if (of_driver_match_device(dev, drv))
+		return 1;
+
+	if (sdrv->id)
+		return (sdev->id == sdrv->id);
+
+	return (strcmp(sdev->name, drv->name) == 0);
 }
 
 static int sensor_bus_probe(struct device *_dev)
@@ -187,6 +192,31 @@ int __must_check __sensor_driver_register(struct sensor_driver *drv,
 	return ret;
 }
 EXPORT_SYMBOL_GPL(__sensor_driver_register);
+
+int __must_check __sensor_register_drivers(struct sensor_driver *const *drivers,
+					   int count, struct module *module)
+{
+	unsigned int i;
+	int err;
+
+	for (i = 0; i < count; i++) {
+		pr_debug("registering sensor driver: %ps\n", drivers[i]);
+		err = __sensor_driver_register(drivers[i], module);
+		if (err) {
+			pr_err("failed to register sensor driver %ps: %d\n",
+			       drivers[i], err);
+			goto fail;
+		}
+	}
+	return 0;
+fail:
+	while (i--) {
+		pr_debug("unregistering sensor driver: %ps\n", drivers[i]);
+		sensor_driver_unregister(drivers[i]);
+	}
+	return err;
+}
+EXPORT_SYMBOL_GPL(__sensor_register_drivers);
 
 void sensor_driver_unregister(struct sensor_driver *drv)
 {

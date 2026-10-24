@@ -26,7 +26,11 @@ struct sensor_driver {
 
 #define sensor_driver_register(drv) __sensor_driver_register(drv, THIS_MODULE)
 
+#define sensor_register_drivers(drv, count) __sensor_register_drivers(drv, count, THIS_MODULE)
+
 extern int __sensor_driver_register(struct sensor_driver *, struct module *);
+extern int __sensor_register_drivers(struct sensor_driver * const* drivers, int count, struct module *module);
+
 extern void sensor_driver_unregister(struct sensor_driver *);
 
 extern int sensor_device_register(struct sensor_device *);

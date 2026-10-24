@@ -63,7 +63,7 @@ static ssize_t sensor_write(struct file *filp, const char __user *buff,
 			    size_t count, loff_t *f_pos)
 {
 	struct sdev_data *data = filp->private_data;
-	int maxsize = data->sdata->size;
+	int maxsize = data->size;
 
 	pr_info("write: f_pos before %llu, count: %zu\n", *f_pos, count);
 	if (!count)
